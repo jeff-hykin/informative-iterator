@@ -32,10 +32,11 @@ def subsequence_replace(a_list, sequence, replacement):
 
 class ProgressBar:
     """
-    from tools.progress_bar import ProgressBar, time
+    from informative_iterator import ProgressBar, time
     for progress, each in ProgressBar(10000):
         time.sleep(0.01)
     """
+    
     layout = [ 'title', 'bar', 'percent', 'spacer', 'fraction', 'spacer', 'start_time', 'spacer', 'end_time', 'spacer', 'remaining_time', 'spacer', ]
     minimal_layout = [ 'title', 'bar', 'spacer', 'end_time', 'spacer', ]
     spacer = " | "
@@ -279,8 +280,3 @@ class ProgressBar:
     
     def __len__(self):
         return self.progress_data.total
-
-
-if __name__ == "__main__":
-    for progress, each in ProgressBar(range(100)):
-        time.sleep(0.1)
