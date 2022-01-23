@@ -17,7 +17,15 @@ import time
 # 
 for progress, each in ProgressBar(range(1000)):
     time.sleep(0.01)
-    
+# example output:
+# [>..................................]  0.00% |    0/1000 | started: 13:18:32 | eta: ________ | remaining: ________ | 
+# example output:
+# [==============>....................] 42.50% |  425/1000 | started: 13:18:32 | eta: 13:18:44 | remaining: 0:07sec | 
+# example output:
+# [================================>..] 93.10% |  931/1000 | started: 13:18:32 | eta: 13:18:44 | remaining: 0:01sec | 
+# example output:
+# Done in 0:12sec at 13:18:44
+
 # 
 # example 2
 # 
