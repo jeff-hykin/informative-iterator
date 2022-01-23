@@ -32,10 +32,11 @@ def subsequence_replace(a_list, sequence, replacement):
 
 class ProgressBar:
     """
-    from tools.progress_bar import ProgressBar, time
+    from informative_iterator import ProgressBar, time
     for progress, each in ProgressBar(10000):
         time.sleep(0.01)
     """
+    
     layout = [ 'title', 'bar', 'percent', 'spacer', 'fraction', 'spacer', 'start_time', 'spacer', 'end_time', 'spacer', 'remaining_time', 'spacer', ]
     minimal_layout = [ 'title', 'bar', 'spacer', 'end_time', 'spacer', ]
     spacer = " | "
@@ -44,15 +45,15 @@ class ProgressBar:
     disable_logging = False
     progress_bar_size = 35
     seconds_per_print = 1
-    percent_per_print = 10
+    percent_per_print = 100
     
     @classmethod
     def configure(this_class, **config):
         for each_key, each_value in config.items():
             setattr(this_class, each_key, each_value)
     
-    def __init__(self, iterations, *, title=None, total=None, layout=None, disable_logging=NotGiven, minimal=NotGiven, inline=NotGiven, progress_bar_size=NotGiven, seconds_per_print=NotGiven, percent_per_print=NotGiven, ):
-        original_generator = range(int(iterations)) if isinstance(iterations, (int, float)) else iterations
+    def __init__(self, iterator, *, title=None, iterations=None, layout=None, disable_logging=NotGiven, minimal=NotGiven, inline=NotGiven, progress_bar_size=NotGiven, seconds_per_print=NotGiven, percent_per_print=NotGiven, ):
+        original_generator = range(int(iterator)) if isinstance(iterator, (int, float)) else iterator
         self.title = title
         
         # inherit unspecified options from class object
@@ -78,7 +79,7 @@ class ProgressBar:
             percent=0,
             updated=True,
             time=self.times[0],
-            total=(len(original_generator) if total is None else total),
+            total_iterations=(len(original_generator) if iterations is None else iterations),
         )
         # setup print
         if self.disable_logging:
@@ -152,7 +153,7 @@ class ProgressBar:
                 # update
                 self.progress_data.time    = time.time()
                 self.progress_data.updated = (self.progress_data.time - self.prev_time) > self.seconds_per_print
-                self.progress_data.percent = (self.progress_data.index * 10000 // self.progress_data.total) / 100 # two decimals of accuracy
+                self.progress_data.percent = (self.progress_data.index * 10000 // self.progress_data.total_iterations) / 100 # two decimals of accuracy
                 
                 if self.progress_data.updated:
                     self.prev_time = self.progress_data.time
@@ -179,7 +180,7 @@ class ProgressBar:
                         deviation = stdev(iterations_per_update)
                         partial_deviation = (self.progress_data.percent/100) * deviation
                         lowerbound_iterations_per_update = average_iterations - partial_deviation
-                        expected_number_of_updates_needed = (self.progress_data.total - self.progress_data.index) / lowerbound_iterations_per_update
+                        expected_number_of_updates_needed = (self.progress_data.total_iterations - self.progress_data.index) / lowerbound_iterations_per_update
                         time_per_update = self.total_eslaped_time / len(iterations_per_update)
                         self.secs_remaining = time_per_update * expected_number_of_updates_needed
                     
@@ -193,8 +194,10 @@ class ProgressBar:
                     if not self.inline:
                         self.print()
                     
-        
                 yield self.progress_data, each_original
+                # manual stop if given an infinite generator and a "total_iterations" argument
+                if self.progress_data.index+1 >= self.progress_data.total_iterations:
+                    break
             
             self.show_done()
             
@@ -223,7 +226,7 @@ class ProgressBar:
             self.print(self.title, end=' ')
         
     def show_bar(self):
-        prog = int((self.progress_data.index / self.progress_data.total) * self.progress_bar_size)
+        prog = int((self.progress_data.index / self.progress_data.total_iterations) * self.progress_bar_size)
         self.print('[' + '=' * prog, end='')
         if prog != self.progress_bar_size:
             self.print('>' + '.' * (self.progress_bar_size - prog - 1), end='')
@@ -242,12 +245,13 @@ class ProgressBar:
         self.print(self.to_time_string(self.total_eslaped_time), end='')
     
     def show_fraction(self):
-        total_str = f"{self.progress_data.total}"
-        self.print(f'{self.progress_data.index}'.rjust(len(total_str))+f'/{self.progress_data.total}', end='')
-        
-    def show_iteration_time(self):
-        iterations_per_sec = (self.past_indicies[-1] - self.past_indicies[-2]) / self.eslaped_time
-        self.print(f'{self.to_time_string(self.eslaped_time)}sec per iter', end='')
+        total_str = f"{self.progress_data.total_iterations}"
+        self.print(f'{self.progress_data.index}'.rjust(len(total_str))+f'/{self.progress_data.total_iterations}', end='')
+    
+    # TODO: fix then add this back
+    # def show_iteration_time(self):
+    #     iterations_per_sec = (self.past_indicies[-1] - self.past_indicies[-2]) / self.eslaped_time
+    #     self.print(f'{self.to_time_string(self.eslaped_time)}sec per iter', end='')
     
     def show_start_time(self):
         if self.progress_data.percent != 100:
@@ -278,9 +282,4 @@ class ProgressBar:
         return next(self.iterator)
     
     def __len__(self):
-        return self.progress_data.total
-
-
-if __name__ == "__main__":
-    for progress, each in ProgressBar(range(100)):
-        time.sleep(0.1)
+        return self.progress_data.total_iterations

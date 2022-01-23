@@ -2,7 +2,7 @@
 
 I wanted a light, clean, configurable alternative to tqdm. So I made one.
 
-It with jupyter notebooks and regular python.
+It works well with jupyter notebooks and regular python.
 
 # How do I use this?
 
