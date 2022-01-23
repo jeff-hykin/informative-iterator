@@ -1,32 +1,81 @@
 # What is this?
 
-A template for python packages
+I wanted a light, clean, configurable alternative to tqdm. So I made one.
 
-# How do I fill out this template?
-
-1. Change the `pyproject.toml` file (package name, version, etc)
-2. Change the `./main/your_package_name` folder
-3. Edit the `./main/your_package_name/__init__.py` file, and change the `from your_package_name.main import *`
-4. Open the `./main/setup.py` and edit the `install_requires=` part to include dependencies
-5. Edit this readme (it will be the front page of the package)
-6. Edit the `./main/your_package_name/main.py` to have your library in it
-7. Run `project local_install` to install what you just made
-8. Run `project publish` to release your package
-
-
-## (Readme template below)
-
-# What is this?
-
-(Your answer here)
+It with jupyter notebooks and regular python.
 
 # How do I use this?
 
-`pip install your_package_name`
-
+`pip install informative_iterator`
 
 ```python
-from your_package_name import something
+from informative_iterator import ProgressBar
+import time
 
-# example of how to use your package here
+# 
+# example 1
+# 
+for progress, each in ProgressBar(range(1000)):
+    time.sleep(0.01)
+    
+# 
+# example 2
+# 
+import random
+def custom_iterable():
+    yield random.random()
+
+for progress, each in ProgressBar(custom_iterable(), total=1000):
+    time.sleep(0.01)
+
+# 
+# example 3
+# 
+for progress, each in ProgressBar(1000):
+    time.sleep(0.01)
+    # index, just like using enumerate()
+    print('progress.index   = ', progress.index)
+    # percent with two decimal places. ex: 99.5
+    print('progress.percent = ', progress.percent)
+    # the output of time.time() for this iteration (seconds since unix epoch)
+    print('progress.time    = ', progress.time)
+    # boolean (updates dont always get printed every iteration)
+    print('progress.updated = ', progress.updated)
+    # int, doesn't change with iterations: its the size of the iterator
+    print('progress.total   = ', progress.total)
+
+# 
+# example 4
+# 
+# update ~30 times a second for smooth looking progress
+for progress, each in ProgressBar(1000, seconds_per_print=0.03):
+    time.sleep(0.01)
+
+# 
+# example 5
+# 
+# have all progress bars default to trying to update update ~30 times a second
+ProgressBar.configure(
+    seconds_per_print=0.03,
+)
+for progress, each in ProgressBar(1000):
+    time.sleep(0.01)
+
+# 
+# example 6
+# 
+ProgressBar.configure(
+    # all the options (these exist as arguments for ProgressBar as well)
+    layout=[ 'title', 'bar', 'percent', 'spacer', 'fraction', 'spacer', 'start_time', 'spacer', 'end_time', 'spacer', 'remaining_time', 'spacer', ],
+    spacer=" | ",
+    minmal=False, # defaults to normal layout
+    minimal_layout=[ 'title', 'bar', 'spacer', 'end_time', 'spacer', ],
+    inline=True,
+    disable_logging=False, # turn off all the output
+    progress_bar_size=35,
+    seconds_per_print=1, # print every second
+    percent_per_print=10, # And print every 10% of progress
+)
+for progress, each in ProgressBar(1000):
+    time.sleep(0.01)
 ```

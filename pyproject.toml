@@ -1,18 +1,19 @@
 [tool.poetry]
-name = "your_package_name"
+name = "informative_iterator"
 version = "0.0.1"
-description = "YOUR_DESCRIPTION"
+description = "A replacement for tqdm"
 authors=[]
 
 [tool.extra]
-author='YOUR_NAME_14057'
-author_email='YOUR_EMAIL'
-url='YOUR_GIT_REPO_URL'
+author='Jeff Hykin'
+author_email='jeff.hykin@gmail.com'
+url='https://github.com/jeff-hykin/informative-iterator.git'
 license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.7,<3.12"
 pip = "20.1.1"
+super_map = ">=1.1.1"
 
 [tool.poetry.dev-dependencies]
 twine = "3.4.1"
