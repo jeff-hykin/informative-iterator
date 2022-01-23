@@ -8,10 +8,12 @@ import math
 from super_map import Map
 
 try:
-    from IPython.display import display, HTML, clear_output
+    from IPython.display import display, HTML, clear_output, get_ipython
     from io import StringIO
-    ipython_exists = True
-except:
+    ipython_exists = 'IPKernelApp' in get_ipython().config
+except ImportError:
+    ipython_exists = False
+except AttributeError:
     ipython_exists = False
     
 class NotGiven: pass
