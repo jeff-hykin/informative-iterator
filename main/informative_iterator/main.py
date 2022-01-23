@@ -106,6 +106,8 @@ class ProgressBar:
                 output_str = string_stream.getvalue()
                 string_stream.close()
                 self.string_buffer += output_str
+                # escape html just encase
+                self.string_buffer = self.string_buffer.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('‘', "'").replace('"', "&quot;").replace("\n", "<br>")
                 
                 # clear output whenever newline is created
                 if kwargs.get("end", "\n") in ['\n', '\r']:
@@ -125,7 +127,7 @@ class ProgressBar:
                             <div style="width: 100%; height: 1rem;">
                             </div>
                             <div style="position: relative; height: fit-content; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; align-content: center; justify-items: center;  justify-content: center;">
-                                <div style="position: relative; background: #46505a; height: 1.7rem; width: fit-content; border-radius: 10rem; border: transparent solid 0.5rem; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; align-content: center; justify-items: center;  justify-content: center;">
+                                <div style="position: relative;background: #46505a;height: fit-content;width: fit-content; min-width: 50%; border-radius: 1.2rem;border: transparent solid 0.5rem;box-sizing: border-box;display: flex;flex-direction: column;align-items: center;align-content: center;justify-items: center;justify-content: center;padding: 1rem;">
                                     <code style="whitespace: pre; color: whitesmoke;" >
                                         {self.string_buffer}
                                     </code>
