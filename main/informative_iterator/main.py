@@ -48,18 +48,19 @@ class ProgressBar:
     progress_bar_size = 35
     seconds_per_print = 1
     percent_per_print = 100
+    lookback_size = 100
     
     @classmethod
     def configure(this_class, **config):
         for each_key, each_value in config.items():
             setattr(this_class, each_key, each_value)
     
-    def __init__(self, iterator, *, title=None, iterations=None, layout=None, disable_logging=NotGiven, minimal=NotGiven, inline=NotGiven, progress_bar_size=NotGiven, seconds_per_print=NotGiven, percent_per_print=NotGiven, ):
+    def __init__(self, iterator, *, title=None, iterations=None, layout=None, disable_logging=NotGiven, minimal=NotGiven, inline=NotGiven, progress_bar_size=NotGiven, seconds_per_print=NotGiven, percent_per_print=NotGiven, lookback_size=NotGiven):
         original_generator = range(int(iterator)) if isinstance(iterator, (int, float)) else iterator
         self.title = title
         
         # inherit unspecified options from class object
-        for each_option in [ "disable_logging", "minimal", "inline", "progress_bar_size", "seconds_per_print", "percent_per_print", ]:
+        for each_option in [ "disable_logging", "minimal", "inline", "progress_bar_size", "seconds_per_print", "percent_per_print", "lookback_size" ]:
             arg_value = eval(each_option, locals())
             # default to the class value if not given
             if arg_value == NotGiven:
@@ -82,6 +83,8 @@ class ProgressBar:
             updated=True,
             time=self.times[0],
             total_iterations=(len(original_generator) if iterations is None else iterations),
+            deviation=None,
+            expected_number_of_updates_needed=None,
         )
         # setup print
         if self.disable_logging:
@@ -176,16 +179,25 @@ class ProgressBar:
                         self.total_eslaped_time = self.times[-1] - self.times[ 0]
                         self.eslaped_time       = self.times[-1] - self.times[-2]
                         
-                        # compute ETA as a slight overestimate that is less of an overesitmate over time
-                        iterations_per_update = tuple(each-prev for prev, each in zip(self.past_indicies[0:-1], self.past_indicies[1:]))
-                        average_iterations = mean(iterations_per_update)
-                        deviation = stdev(iterations_per_update)
-                        partial_deviation = (self.progress_data.percent/100) * deviation
-                        lowerbound_iterations_per_update = average_iterations - partial_deviation
-                        expected_number_of_updates_needed = (self.progress_data.total_iterations - self.progress_data.index) / lowerbound_iterations_per_update
-                        time_per_update = self.total_eslaped_time / len(iterations_per_update)
+                        # 
+                        # compute ETA as a slight overestimate that is less-of-an-overesitmate over time
+                        # 
+                        lookback_size = self.lookback_size
+                        remaining_number_of_iterations = self.progress_data.total_iterations - self.progress_data.index
+                        recent_indicies                = self.past_indicies[-lookback_size:]
+                        recent_update_times            = self.times[-lookback_size:]
+                        number_of_indicies_processed   =     recent_indicies[-1] -     recent_indicies[0]
+                        time_span_of_recent_updates    = recent_update_times[-1] - recent_update_times[0]
+                        time_per_update                = time_span_of_recent_updates / (len(recent_update_times)-1)
+                        
+                        list_of_iterations_per_update = tuple(each-prev for prev, each in zip(recent_indicies[0:-1], recent_indicies[1:]))
+                        average_number_of_iterations_per_update = mean(list_of_iterations_per_update)
+                        partial_deviation                       = (1 - (self.progress_data.percent/100)) * stdev(list_of_iterations_per_update)
+                        iterations_per_update_lowerbound        = average_number_of_iterations_per_update - partial_deviation
+                        expected_number_of_updates_needed       = remaining_number_of_iterations / iterations_per_update_lowerbound
+                        
                         self.secs_remaining = time_per_update * expected_number_of_updates_needed
-                    
+                        
                     if self.inline:
                         self.print('', end='\r')
                     
