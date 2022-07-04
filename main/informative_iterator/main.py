@@ -125,8 +125,8 @@ class ProgressBar:
             layout = subsequence_replace(layout, [ 'spacer', 'spacer'            ], ['spacer'])
             self.layout = layout
             self.string_buffer = ""
-            print(f'''ipython_print''')
             self.html_created = False
+            self.should_flush = False
             def ipython_print(*args, **kwargs):
                 # get the string value
                 string_stream = StringIO()
@@ -138,13 +138,14 @@ class ProgressBar:
                 self.string_buffer = self.string_buffer.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('‘', "'").replace('"', "&quot;").replace("\n", "<br>")
                 
                 # clear output whenever newline is created
-                if kwargs.get("end", "\n") in ['\n', '\r']:
+                if self.should_flush:
+                    self.should_flush = False
                     if not self.html_created:
                         self.html_created = True
                         clear_output(wait=True)
                         display(HTML(f'''
-                            <div id="progressContainer" style="left: 0; top: 0; width: 100%; background: transparent; color: white; position: sticky; padding: 1.2rem 0.4rem; box-sizing: border-box;">
-                                <div style="position: relative; background: #46505a; height: 2.7rem; width: 95%; border-radius: 10rem; border: transparent solid 0.34rem; box-sizing: border-box; opacity: {self.opacity};">
+                            <div id="progressContainer" style="left: 0; top: 0; width: 95%; background: transparent; color: white; position: sticky; padding: 1.2rem 0.4rem; box-sizing: border-box;">
+                                <div style="position: relative; background: #46505a; height: 2.7rem; width: 100%; border-radius: 10rem; border: transparent solid 0.34rem; box-sizing: border-box; opacity: {self.opacity};">
                                     <!-- color bar -->
                                     <div id="progressBar" style="height: 100%; background: {self.colors.progress}; border-radius: 10rem; transition: all 0.5s ease-in-out 0s;"></div>
                                     <!-- percentage text -->
@@ -157,10 +158,9 @@ class ProgressBar:
                                 <div style="width: 100%; height: 1rem;">
                                 </div>
                                 <div style="position: relative; height: fit-content; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; align-content: center; justify-items: center;  justify-content: center;">
-                                    <div style="position: relative;background: #46505a;height: fit-content;width: fit-content; min-width: 50%; border-radius: 1.2rem;border: transparent solid 0.5rem;box-sizing: border-box;display: flex;flex-direction: column;align-items: center;align-content: center;justify-items: center;justify-content: center;padding: 1rem;">
-                                        <code id="progressText" style="whitespace: pre; color: whitesmoke;" >
-                                            {self.string_buffer}
-                                        </code>
+                                    <div style="position: relative;background: #46505a;height: fit-content;width: fit-content; min-width: 50%; border-radius: 1.2rem;border: transparent solid 0.5rem;box-sizing: border-box;display: flex;flex-direction: column;align-items: center;align-content: center;justify-items: center;justify-content: center;padding: 1rem; padding-top: 0;">
+                                        <code id="progressText" style="white-space: pre; color: whitesmoke;" >{self.string_buffer}</code>
+                                        <code id="customProgressText" style="white-space: pre; color: whitesmoke; padding-top: 1rem;" >{self.progress_data.text}</code>
                                     </div>
                                 </div>
                                 <style>
@@ -199,21 +199,24 @@ class ProgressBar:
                         '''))
                     else:
                         from random import random
-                        random_id = f"id_{random()}".replace('.','')
+                        random_id_1 = f"id_{random()}".replace('.','')
+                        random_id_2 = f"id_{random()}".replace('.','')
                         display(HTML(f'''
                             <div>
-                                <code id="{random_id}" style="display: none;" >
-                                    {self.string_buffer}
-                                </code>
+                                <code id="{random_id_1}" style="display: none;" >{self.string_buffer}</code>
+                                <code id="{random_id_2}" style="display: none;" >{self.progress_data.text}</code>
                                 <script>
                                     var bar = document.getElementById("progressBar")
                                     var percent = document.getElementById("progressPercent")
                                     var text = document.getElementById("progressText")
-                                    var textContainer = document.getElementById("{random_id}")
+                                    var customText = document.getElementById("customProgressText")
+                                    var textContainer = document.getElementById("{random_id_1}")
+                                    var customTextContainer = document.getElementById("{random_id_2}")
                                     bar.style.width = `{self.progress_data.percent}%`
                                     percent.innerHTML = `{self.progress_data.percent:0.2f}%`
                                     // swap out contents (performed this way so that self.string_buffer uses html-escapes instead of javascript-string escapes)
                                     text.innerHTML = textContainer.innerHTML
+                                    if (customTextContainer.innerHTML.trim().length > 0) customText.innerHTML = customTextContainer.innerHTML
                                 </script>
                             </div>
                         '''))
@@ -287,14 +290,18 @@ class ProgressBar:
                     for each in self.layout:
                         getattr(self, f"show_{each}", lambda : None)()
                     
-                    if self.progress_data.text:
-                        self.print('', end='\n')
-                        self.print('                                                                                                                        ', end='\r')
-                        self.print(self.progress_data.text, end='\n')
+                    if not ipython_exists:
+                        if self.progress_data.text:
+                            self.print('', end='\n')
+                            self.print('                                                                                                                        ', end='\r')
+                            self.print(self.progress_data.text, end='\n')
                         
                     if not self.inline:
                         self.print()
                     
+                    # convoluted so that it handles both GUI and CLI
+                    self.should_flush = True
+                    self.print(end="")
                     sys.stdout.flush()
                     
                 yield self.progress_data, each_original
