@@ -1,8 +1,9 @@
 # What is this?
 
-I wanted a light, clean, configurable alternative to tqdm. So I made one.
+I wanted a light, clean, configurable alternative to tqdm. So I made one, complete with animations.
 
-It works well with jupyter notebooks and regular python.
+<img width="1724" alt="Screen Shot 2022-07-03 at 8 30 01 PM" src="https://user-images.githubusercontent.com/17692058/177068705-9efc56d3-4300-4982-a07a-6db9aa61df8d.png">
+
 
 # How do I use this?
 
@@ -15,7 +16,7 @@ import time
 # 
 # example 1
 # 
-for progress, each in ProgressBar(range(10000)):
+for progress, each_element in ProgressBar([ 1, 2, 3, "any iterable thing" ]):
     time.sleep(0.002)
 # example output:
 # [>..................................]  0.00% |    0/1000 | started: 13:18:32 | eta: ________ | remaining: ________ | 
