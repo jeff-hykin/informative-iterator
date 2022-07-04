@@ -8,9 +8,23 @@ import math
 from super_map import Map
 
 try:
-    from IPython.display import display, HTML, clear_output, get_ipython
+    from IPython.display import display, HTML, clear_output
     from io import StringIO
-    ipython_exists = 'IPKernelApp' in get_ipython().config
+    ipython_exists = False
+    
+    try:
+        from IPython.display import get_ipython
+        ipython_exists = 'IPKernelApp' in get_ipython().config
+        ipython_exists = True
+    except Exception as error:
+        pass
+    
+    try:
+        from google.colab import output
+        ipython_exists = True
+    except Exception as error:
+        pass
+    
 except ImportError:
     ipython_exists = False
 except AttributeError:
@@ -77,6 +91,10 @@ class ProgressBar:
         self.next_percent_mark = self.percent_per_print
         self.prev_time         = -math.inf
         self.times             = [time.time()]
+        self.opacity = 0.7
+        self.colors = Map(
+            progress="#9b68ab",
+        )
         self.progress_data     = Map(
             index=0,
             percent=0,
@@ -85,6 +103,8 @@ class ProgressBar:
             total_iterations=(len(original_generator) if iterations is None else iterations),
             deviation=None,
             expected_number_of_updates_needed=None,
+            pretext="",
+            text="",
         )
         # setup print
         if self.disable_logging:
@@ -105,6 +125,8 @@ class ProgressBar:
             layout = subsequence_replace(layout, [ 'spacer', 'spacer'            ], ['spacer'])
             self.layout = layout
             self.string_buffer = ""
+            print(f'''ipython_print''')
+            self.html_created = False
             def ipython_print(*args, **kwargs):
                 # get the string value
                 string_stream = StringIO()
@@ -117,30 +139,85 @@ class ProgressBar:
                 
                 # clear output whenever newline is created
                 if kwargs.get("end", "\n") in ['\n', '\r']:
-                    clear_output(wait=True)
-                    display(HTML(f'''
-                        <div style="width: 100%; background: transparent; color: white; position: relative; padding: 1.2rem 0.4rem; box-sizing: border-box;">
-                            <div style="position: relative; background: #46505a; height: 2.7rem; width: 100%; border-radius: 10rem; border: transparent solid 0.34rem; box-sizing: border-box;">
-                                <!-- color bar -->
-                                <div style="height: 100%; width: {self.progress_data.percent}%; background: #9b68ab; border-radius: 10rem;"></div>
-                                <!-- percentage text -->
-                                <div style="height: 100%; width: 100%; position: absolute; top: 0; left: 0; display: flex; flex-direction: column; align-items: center; align-content: center; justify-items: center;  justify-content: center;">
-                                    <span>
-                                        {self.progress_data.percent:0.2f}%
-                                    </span>
+                    if not self.html_created:
+                        self.html_created = True
+                        clear_output(wait=True)
+                        display(HTML(f'''
+                            <div id="progressContainer" style="left: 0; top: 0; width: 100%; background: transparent; color: white; position: sticky; padding: 1.2rem 0.4rem; box-sizing: border-box;">
+                                <div style="position: relative; background: #46505a; height: 2.7rem; width: 95%; border-radius: 10rem; border: transparent solid 0.34rem; box-sizing: border-box; opacity: {self.opacity};">
+                                    <!-- color bar -->
+                                    <div id="progressBar" style="height: 100%; background: {self.colors.progress}; border-radius: 10rem; transition: all 0.5s ease-in-out 0s;"></div>
+                                    <!-- percentage text -->
+                                    <div style="height: 100%; width: 100%; position: absolute; top: 0; left: 0; display: flex; flex-direction: column; align-items: center; align-content: center; justify-items: center;  justify-content: center;">
+                                        <span id="progressPercent">
+                                            {self.progress_data.percent:0.2f}%
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div style="width: 100%; height: 1rem;">
-                            </div>
-                            <div style="position: relative; height: fit-content; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; align-content: center; justify-items: center;  justify-content: center;">
-                                <div style="position: relative;background: #46505a;height: fit-content;width: fit-content; min-width: 50%; border-radius: 1.2rem;border: transparent solid 0.5rem;box-sizing: border-box;display: flex;flex-direction: column;align-items: center;align-content: center;justify-items: center;justify-content: center;padding: 1rem;">
-                                    <code style="whitespace: pre; color: whitesmoke;" >
-                                        {self.string_buffer}
-                                    </code>
+                                <div style="width: 100%; height: 1rem;">
                                 </div>
+                                <div style="position: relative; height: fit-content; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; align-content: center; justify-items: center;  justify-content: center;">
+                                    <div style="position: relative;background: #46505a;height: fit-content;width: fit-content; min-width: 50%; border-radius: 1.2rem;border: transparent solid 0.5rem;box-sizing: border-box;display: flex;flex-direction: column;align-items: center;align-content: center;justify-items: center;justify-content: center;padding: 1rem;">
+                                        <code id="progressText" style="whitespace: pre; color: whitesmoke;" >
+                                            {self.string_buffer}
+                                        </code>
+                                    </div>
+                                </div>
+                                <style>
+                                </style>
+                                <script>
+                                    var progressContainer = document.getElementById("progressContainer")
+                                    var progressFooter = document.getElementById("progressFooter")
+                                    var outputArea = document.getElementById("output-area")
+                                    var outputHeader = document.getElementById("output-header")
+                                    var outputBody = document.getElementById("output-body")
+                                    outputHeader.appendChild(progressContainer)
+                                    
+                                    var scrollBoxSize = 27
+                                    // outputArea
+                                    outputArea.style.maxHeight = `${"{scrollBoxSize+10}"}rem`
+                                    outputArea.style.minHeight = `${"{scrollBoxSize+10}"}rem`
+
+                                    // outputHeader
+                                    outputHeader.style.position = "absolute"
+                                    outputHeader.style.top = "0"
+                                    outputHeader.style.left = "0"
+                                    outputHeader.style.width = "100%"
+
+                                    // outputBody
+                                    outputBody.style.paddingTop = "10.5rem"
+                                    outputBody.style.position = "absolute"
+                                    outputBody.style.height = `${"{scrollBoxSize}"}rem`
+                                    outputBody.style.overflow = "auto"
+                                    outputBody.style.minHeight = "50vh"
+                                    outputBody.style.top = "0"
+                                    outputBody.style.width = "97%"
+
+                                    outputBody.scrollTo(0, outputBody.scrollHeight)
+                                </script>
                             </div>
-                        </div>
-                    '''))
+                        '''))
+                    else:
+                        from random import random
+                        random_id = f"id_{random()}".replace('.','')
+                        display(HTML(f'''
+                            <div>
+                                <code id="{random_id}" style="display: none;" >
+                                    {self.string_buffer}
+                                </code>
+                                <script>
+                                    var bar = document.getElementById("progressBar")
+                                    var percent = document.getElementById("progressPercent")
+                                    var text = document.getElementById("progressText")
+                                    var textContainer = document.getElementById("{random_id}")
+                                    bar.style.width = `{self.progress_data.percent}%`
+                                    percent.innerHTML = `{self.progress_data.percent:0.2f}%`
+                                    // swap out contents (performed this way so that self.string_buffer uses html-escapes instead of javascript-string escapes)
+                                    text.innerHTML = textContainer.innerHTML
+                                </script>
+                            </div>
+                        '''))
+                        
                     # clear the buffer
                     self.string_buffer = ""
             self.print = ipython_print
@@ -197,7 +274,12 @@ class ProgressBar:
                         expected_number_of_updates_needed       = remaining_number_of_iterations / iterations_per_update_lowerbound
                         
                         self.secs_remaining = time_per_update * expected_number_of_updates_needed
-                        
+                    
+                    if self.progress_data.pretext:
+                        self.print('', end='\r')
+                        self.print('                                                                                                                        ', end='\r')
+                        self.print(self.progress_data.pretext, end='\n')
+                    
                     if self.inline:
                         self.print('', end='\r')
                     
@@ -205,8 +287,15 @@ class ProgressBar:
                     for each in self.layout:
                         getattr(self, f"show_{each}", lambda : None)()
                     
+                    if self.progress_data.text:
+                        self.print('', end='\n')
+                        self.print('                                                                                                                        ', end='\r')
+                        self.print(self.progress_data.text, end='\n')
+                        
                     if not self.inline:
                         self.print()
+                    
+                    sys.stdout.flush()
                     
                 yield self.progress_data, each_original
                 # manual stop if given an infinite generator and a "total_iterations" argument
