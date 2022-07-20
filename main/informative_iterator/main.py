@@ -272,9 +272,11 @@ class ProgressBar:
                         
                         list_of_iterations_per_update = tuple(each-prev for prev, each in zip(recent_indicies[0:-1], recent_indicies[1:]))
                         average_number_of_iterations_per_update = mean(list_of_iterations_per_update)
-                        partial_deviation                       = (1 - (self.progress_data.percent/100)) * stdev(list_of_iterations_per_update)
-                        iterations_per_update_lowerbound        = average_number_of_iterations_per_update - partial_deviation
-                        expected_number_of_updates_needed       = remaining_number_of_iterations / iterations_per_update_lowerbound
+                        stdev_of_iters_per_update               = stdev(list_of_iterations_per_update) # TODO: the proper way to do this would be with a one sided bell curve
+                        partial_deviation                       = (1 - (self.progress_data.percent/100)) * stdev_of_iters_per_update
+                        iterations_per_update_lowerbound        = max((average_number_of_iterations_per_update-partial_deviation, min(list_of_iterations_per_update)))
+                        soft_lowerbound                         = mean((iterations_per_update_lowerbound, average_number_of_iterations_per_update))
+                        expected_number_of_updates_needed       = remaining_number_of_iterations / soft_lowerbound
                         
                         self.secs_remaining = time_per_update * expected_number_of_updates_needed
                     
@@ -368,9 +370,12 @@ class ProgressBar:
     def show_end_time(self):
         if self.progress_data.percent != 100:
             time_format = "%H:%M:%S"
+            if self.secs_remaining > (86400/2): # more than half a day
+                time_format = "%D %H:%M:%S"
+            
             try:
                 endtime = self.start_time + timedelta(seconds=self.total_eslaped_time + self.secs_remaining)
-                self.print(f'eta: {endtime.strftime("%H:%M:%S")}',  end='')
+                self.print(f'eta: {endtime.strftime(time_format)}',  end='')
             except:
                 self.print(f'eta: {"_"*len(time_format)}',  end='')
     
