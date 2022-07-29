@@ -7,6 +7,19 @@ import math
 
 from super_map import Map
 
+# nested indentation support
+try:
+    from blissful_basics import print as bliss_print
+except Exception as error:
+    # create a placeholder/stand-in
+    def bliss_print(*args, **kwargs):
+        print(*args, **kwargs)
+    class Indent:
+        size = 0
+        string = " "
+    bliss_print.indent = Indent()
+
+# GUI progress support in notebooks
 try:
     from IPython.display import display, HTML, clear_output
     from io import StringIO
@@ -280,13 +293,16 @@ class ProgressBar:
                         
                         self.secs_remaining = time_per_update * expected_number_of_updates_needed
                     
+                    indent = bliss_print.indent.string*bliss_print.indent.size
                     if self.progress_data.pretext:
                         self.print('', end='\r')
                         self.print('                                                                                                                        ', end='\r')
-                        self.print(self.progress_data.pretext, end='\n')
+                        bliss_print(self.progress_data.pretext, end='\n')
                     
                     if self.inline:
                         self.print('', end='\r')
+                    
+                    self.print(indent, end="")
                     
                     # display each thing according to the layout
                     for each in self.layout:
@@ -294,7 +310,11 @@ class ProgressBar:
                     
                     if not ipython_exists:
                         if self.progress_data.text:
-                            self.print(self.progress_data.text, end='')
+                            line_1, *other_lines = self.progress_data.text.split('\n')
+                            self.print(line_1, end='')
+                            if other_lines:
+                                nextline_text = f"\n{indent}" + f"\n{indent}".join(other_lines)
+                                self.print(nextline_text, end='')
                         
                     if not self.inline:
                         self.print()
@@ -386,7 +406,8 @@ class ProgressBar:
         end_time = datetime.now().strftime("%H:%M:%S")
         self.progress_data.percent = 100.0
         self.string_buffer = "" # for ipython
-        self.print(f'Done in {duration}sec at {end_time}')
+        indent = bliss_print.indent.string * bliss_print.indent.size
+        self.print(f'{indent}Done in {duration}sec at {end_time}')
 
     def __iter__(self):
         return self
