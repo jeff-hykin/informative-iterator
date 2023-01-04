@@ -5,7 +5,7 @@ import time
 import sys
 import math
 
-from super_map import Map
+from super_map import LazyDict
 
 # nested indentation support
 try:
@@ -59,6 +59,20 @@ def subsequence_replace(a_list, sequence, replacement):
     new_list += que # add any remaining elements
     return new_list    
 
+def to_time_string(secs):
+    secs  = int(round(secs))
+    mins  = secs  // 60; secs  = secs  % 60
+    hours = mins  // 60; mins  = mins  % 60
+    days  = hours // 24; hours = hours % 24
+    if days:
+        return f"{days}days, {hours}:{mins}min"
+    elif hours:
+        return f"{hours}:{mins}min"
+    elif mins:
+        return f"{mins}:{secs}sec"
+    else:
+        return f"{secs}sec"
+
 class ProgressBar:
     """
     from informative_iterator import ProgressBar, time
@@ -66,16 +80,18 @@ class ProgressBar:
         time.sleep(0.01)
     """
     
-    layout = [ 'title', 'bar', 'percent', 'spacer', 'fraction', 'spacer', 'start_time', 'spacer', 'end_time', 'spacer', 'remaining_time', 'spacer', ]
+    layout = [ 'title', 'bar', 'percent', 'spacer', 'fraction', 'spacer', 'remaining_time', 'spacer', 'end_time', 'spacer', 'duration', 'spacer', ]
     minimal_layout = [ 'title', 'bar', 'spacer', 'end_time', 'spacer', ]
     spacer = " | "
     minmal = False
     inline = True
     disable_logging = False
     progress_bar_size = 35
-    seconds_per_print = 1
-    percent_per_print = 100
+    seconds_per_print = 0.1
+    percent_per_print = 2
     lookback_size = 100
+    time_format = "%H:%M:%S"
+    long_time_format = "%D %H:%M:%S"
     
     @classmethod
     def configure(this_class, **config):
@@ -105,10 +121,10 @@ class ProgressBar:
         self.prev_time         = -math.inf
         self.times             = [time.time()]
         self.opacity = 0.7
-        self.colors = Map(
+        self.colors = LazyDict(
             progress="#9b68ab",
         )
-        self.progress_data     = Map(
+        self.progress_data     = LazyDict(
             index=0,
             percent=0,
             updated=True,
@@ -333,21 +349,6 @@ class ProgressBar:
             
         self.iterator = iter(generator_func())
 
-    def to_time_string(self, secs):
-        secs = int(round(secs))
-        mins = secs // 60
-        secs = secs % 60
-        str_hours = ''
-        if mins >= 60:
-            hours = mins // 60
-            mins = mins % 60
-            mins = "{:02d}".format(mins)
-            str_hours = str(hours) + ':'
-
-        if secs < 10:
-            return str_hours + '{}:0{}'.format(mins, secs)
-        return str_hours + '{}:{}'.format(mins, secs)
-    
     def show_spacer(self):
         self.print(self.spacer, end='')
     
@@ -364,15 +365,15 @@ class ProgressBar:
     
     def show_remaining_time(self):
         if self.secs_remaining == math.inf:
-            self.print(f'remaining: ________', end='')
+            self.print(f'remaining: _______', end='')
         elif self.progress_data.percent != 100:
-            self.print(f'remaining: {self.to_time_string(self.secs_remaining)}sec', end='')
+            self.print(f'remaining: {to_time_string(self.secs_remaining)}', end='')
         
     def show_percent(self):
         self.print(f'{self.progress_data.percent:.2f}%'.rjust(6), end='')
     
     def show_duration(self):
-        self.print(self.to_time_string(self.total_eslaped_time), end='')
+        self.print("elapsed: "+to_time_string(self.total_eslaped_time), end='')
     
     def show_fraction(self):
         total_str = f"{self.progress_data.total_iterations}"
@@ -381,33 +382,32 @@ class ProgressBar:
     # TODO: fix then add this back
     # def show_iteration_time(self):
     #     iterations_per_sec = (self.past_indicies[-1] - self.past_indicies[-2]) / self.eslaped_time
-    #     self.print(f'{self.to_time_string(self.eslaped_time)}sec per iter', end='')
+    #     self.print(f'{to_time_string(self.eslaped_time)}sec per iter', end='')
     
     def show_start_time(self):
         if self.progress_data.percent != 100:
-            self.print(f'started: {self.start_time.strftime("%H:%M:%S")}',  end='')
+            self.print(f'started: {self.start_time.strftime(self.time_format)}',  end='')
     
     def show_end_time(self):
         if self.progress_data.percent != 100:
-            time_format = "%H:%M:%S"
+            time_format = self.time_format
             if self.secs_remaining > (86400/2): # more than half a day
-                time_format = "%D %H:%M:%S"
-            
+                time_format = self.long_time_format
             try:
                 endtime = self.start_time + timedelta(seconds=self.total_eslaped_time + self.secs_remaining)
                 self.print(f'eta: {endtime.strftime(time_format)}',  end='')
             except:
-                self.print(f'eta: {"_"*len(time_format)}',  end='')
+                self.print(f'eta: {"_"*(len(time_format)-3)}',  end='')
     
     def show_done(self):
         if self.inline:
             print("")
-        duration = self.to_time_string(time.time() - self.times[0])
-        end_time = datetime.now().strftime("%H:%M:%S")
+        duration = to_time_string(time.time() - self.times[0])
+        end_time = datetime.now().strftime(self.time_format)
         self.progress_data.percent = 100.0
         self.string_buffer = "" # for ipython
         indent = bliss_print.indent.string * bliss_print.indent.size
-        self.print(f'{indent}Done in {duration}sec at {end_time}')
+        self.print(f'{indent}Done in {duration} at {end_time}')
 
     def __iter__(self):
         return self
