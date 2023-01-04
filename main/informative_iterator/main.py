@@ -65,10 +65,14 @@ def to_time_string(secs):
     hours = mins  // 60; mins  = mins  % 60
     days  = hours // 24; hours = hours % 24
     if days:
+        hours = f"{hours}".rjust(2,"0")
+        mins  = f"{mins}".rjust(2,"0")
         return f"{days}days, {hours}:{mins}min"
     elif hours:
+        mins  = f"{mins}".rjust(2,"0")
         return f"{hours}:{mins}min"
     elif mins:
+        secs  = f"{secs}".rjust(2,"0")
         return f"{mins}:{secs}sec"
     else:
         return f"{secs}sec"
