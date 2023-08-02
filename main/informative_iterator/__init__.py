@@ -16,7 +16,7 @@ except Exception as error:
         print(*args, **kwargs)
     class Indent:
         size = 0
-        string = " "
+        string = "    "
     bliss_print.indent = Indent()
 
 # GUI progress support in notebooks
@@ -77,6 +77,7 @@ def to_time_string(secs):
     else:
         return f"{secs}sec"
 
+nested_progress_bars = []
 class ProgressBar:
     """
     from informative_iterator import ProgressBar, time
@@ -104,7 +105,7 @@ class ProgressBar:
     
     def __init__(self, iterator, *, title=None, iterations=None, layout=None, disable_logging=NotGiven, minimal=NotGiven, inline=NotGiven, progress_bar_size=NotGiven, seconds_per_print=NotGiven, percent_per_print=NotGiven, lookback_size=NotGiven):
         original_generator = range(int(iterator)) if isinstance(iterator, (int, float)) else iterator
-        self.title = title
+        self.title = title or ""
         
         # inherit unspecified options from class object
         for each_option in [ "disable_logging", "minimal", "inline", "progress_bar_size", "seconds_per_print", "percent_per_print", "lookback_size" ]:
@@ -267,6 +268,11 @@ class ProgressBar:
             self.layout = layout
         
         def generator_func():
+            self.parent_bars = list(nested_progress_bars)
+            nested_progress_bars.append(self)
+            self.nested_indent = bliss_print.indent.string * len(self.parent_bars)
+            if len(self.parent_bars) > 0:
+                self.print()
             for self.progress_data.index, each_original in enumerate(original_generator):
                 # update
                 self.progress_data.time    = time.time()
@@ -318,7 +324,7 @@ class ProgressBar:
                         self.secs_remaining = self.total_eslaped_time * (self.progress_data.total_iterations - 1)
                         
                         
-                    indent = bliss_print.indent.string*bliss_print.indent.size
+                    indent = bliss_print.indent.string*bliss_print.indent.size + self.nested_indent
                     if self.progress_data.pretext:
                         self.print('', end='\r')
                         self.print('                                                                                                                        ', end='\r')
@@ -355,6 +361,7 @@ class ProgressBar:
                     break
             
             self.show_done()
+            nested_progress_bars.remove(self)
             
         self.iterator = iter(generator_func())
 
@@ -410,7 +417,7 @@ class ProgressBar:
         end_time = datetime.now().strftime(self.time_format)
         self.progress_data.percent = 100.0
         self.string_buffer = "" # for ipython
-        indent = bliss_print.indent.string * bliss_print.indent.size
+        indent = (bliss_print.indent.string * bliss_print.indent.size) + self.nested_indent
         self.print(f'{indent}Done in {duration} at {end_time}')
 
     def __iter__(self):
