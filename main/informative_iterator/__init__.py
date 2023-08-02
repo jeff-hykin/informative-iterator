@@ -5,7 +5,7 @@ import time
 import sys
 import math
 
-from __dependencies__.super_map import LazyDict
+from .__dependencies__.super_map import LazyDict
 
 # nested indentation support
 try:
