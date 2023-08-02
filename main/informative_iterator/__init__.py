@@ -285,12 +285,10 @@ class ProgressBar:
                 
                 if self.progress_data.updated:
                     self.total_eslaped_time = 0
-                    self.eslaped_time       = 0
                     self.secs_remaining     = math.inf
-                    # compute changes (need at least two times to do that)
+                    # if more than 3, then stdev can be computed
                     if len(self.times) > 3:
                         self.total_eslaped_time = self.times[-1] - self.times[ 0]
-                        self.eslaped_time       = self.times[-1] - self.times[-2]
                         
                         # 
                         # compute ETA as a slight overestimate that is less-of-an-overesitmate over time
@@ -313,6 +311,13 @@ class ProgressBar:
                         
                         self.secs_remaining = time_per_update * expected_number_of_updates_needed
                     
+                    # otherwise, use super basic linear prediction
+                    elif len(self.times) > 2:
+                        # provide very rough estimate on first iteration ()
+                        self.total_eslaped_time = self.times[-1] - self.times[ 0]
+                        self.secs_remaining = self.total_eslaped_time * (self.progress_data.total_iterations - 1)
+                        
+                        
                     indent = bliss_print.indent.string*bliss_print.indent.size
                     if self.progress_data.pretext:
                         self.print('', end='\r')
@@ -382,11 +387,6 @@ class ProgressBar:
     def show_fraction(self):
         total_str = f"{self.progress_data.total_iterations}"
         self.print(f'{self.progress_data.index}'.rjust(len(total_str))+f'/{self.progress_data.total_iterations}', end='')
-    
-    # TODO: fix then add this back
-    # def show_iteration_time(self):
-    #     iterations_per_sec = (self.past_indicies[-1] - self.past_indicies[-2]) / self.eslaped_time
-    #     self.print(f'{to_time_string(self.eslaped_time)}sec per iter', end='')
     
     def show_start_time(self):
         if self.progress_data.percent != 100:
