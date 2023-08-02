@@ -1,7 +1,5 @@
-import os
 import setuptools
 import toml
-from __dependencies__.file_system_py import iterate_paths_in
 
 # 
 # get the data out of the toml file
@@ -27,15 +25,9 @@ setuptools.setup(
     author_email=package_info["author_email"],
     license=package_info["license"],
     packages=[package_info["name"]],
-    install_requires=[],
-    setup_requires=['setuptools_scm'],
-    package_data={
-        # include all files/folders in the module (recursively)
-        package_info["name"]: [
-            each[len(package_info["name"])+1:]
-                for each in iterate_paths_in(package_info["name"], recursively=True)
-        ],
-    },
+    install_requires=[
+        'json-fix >= 0.1.3',
+    ],
     classifiers=[
         # examples:
         # 'Development Status :: 5 - Production/Stable',
