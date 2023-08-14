@@ -67,13 +67,13 @@ def to_time_string(secs):
     if days:
         hours = f"{hours}".rjust(2,"0")
         mins  = f"{mins}".rjust(2,"0")
-        return f"{days}days, {hours}:{mins}min"
+        return f"{days}days, {hours}h:{mins}min"
     elif hours:
         mins  = f"{mins}".rjust(2,"0")
-        return f"{hours}:{mins}min"
+        return f"{hours}h:{mins}min"
     elif mins:
         secs  = f"{secs}".rjust(2,"0")
-        return f"{mins}:{secs}sec"
+        return f"{mins}m:{secs}sec"
     else:
         return f"{secs}sec"
 
