@@ -269,7 +269,6 @@ class ProgressBar:
             inner_print(*args, **kwargs)
             output_str = string_stream.getvalue()
             self.progress_data.previous_output += output_str
-            self.progress_data.previous_output = self.progress_data.previous_output.split("\r")[0]
             string_stream.close()
             return output
         self.print = print_capture
@@ -290,6 +289,7 @@ class ProgressBar:
             if len(self.parent_bars) > 0:
                 self.print()
             for self.progress_data.index, each_original in enumerate(original_generator):
+                self.progress_data.previous_output = ""
                 # update
                 self.progress_data.time    = time.time()
                 self.progress_data.updated = (self.progress_data.time - self.prev_time) > self.seconds_per_print
@@ -376,6 +376,7 @@ class ProgressBar:
                 if self.progress_data.index+1 >= self.progress_data.total_iterations:
                     break
             
+            self.progress_data.previous_output = ""
             self.show_done()
             nested_progress_bars.remove(self)
             
