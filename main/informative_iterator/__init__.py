@@ -4,6 +4,7 @@ from statistics import mean, stdev
 import time
 import sys
 import math
+from io import StringIO
 
 from .__dependencies__.super_map import LazyDict
 
@@ -139,6 +140,7 @@ class ProgressBar:
             expected_number_of_updates_needed=None,
             pretext="",
             text="",
+            previous_output="",
         )
         # setup print
         if self.disable_logging:
@@ -258,6 +260,20 @@ class ProgressBar:
                     # clear the buffer
                     self.string_buffer = ""
             self.print = ipython_print
+        
+        # wrap it to record the text
+        inner_print = self.print
+        def print_capture(*args, **kwargs):
+            string_stream = StringIO()
+            output = print(*args, **kwargs, file=string_stream)
+            inner_print(*args, **kwargs)
+            output_str = string_stream.getvalue()
+            self.progress_data.previous_output += output_str
+            self.progress_data.previous_output = self.progress_data.previous_output.split("\r")[0]
+            string_stream.close()
+            return output
+        self.print = print_capture
+        
             
         # setup layout
         if layout == None and self.minimal:
