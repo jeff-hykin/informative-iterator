@@ -389,7 +389,10 @@ class ProgressBar:
                         sys.stdout.flush()
                     
                     pass
-                    
+                
+                # if on the last yield
+                if self.progress_data.index+1 >= self.progress_data.total_iterations:
+                    nested_progress_bars.remove(self)
                 yield self.progress_data, each_original
                 # manual stop if given an infinite generator and a "total_iterations" argument
                 if self.progress_data.index+1 >= self.progress_data.total_iterations:
@@ -397,7 +400,6 @@ class ProgressBar:
             
             self.progress_data.previous_output = ""
             self.show_done()
-            nested_progress_bars.remove(self)
             
         self.iterator = iter(generator_func())
 
